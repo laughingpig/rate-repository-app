@@ -1,7 +1,12 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import Constants from 'expo-constants';
 import AppBarTab from './AppBarTab';
+import {useQuery} from '@apollo/react-hooks';
+import { gql } from 'apollo-boost';
+import { useHistory } from "react-router-native";
+import { useApolloClient } from '@apollo/client';
+import AuthStorageContext from '../contexts/AuthStorageContext';
 
 const styles = StyleSheet.create({
   container: {
@@ -16,12 +21,30 @@ const styles = StyleSheet.create({
 });
 
 const AppBar = () => {
+  const history = useHistory();
+  const { data } = useQuery(gql`
+  {
+    authorizedUser {
+      id
+      username
+    }
+  }`);
+  const authStorage = useContext(AuthStorageContext);
+  const apolloClient = useApolloClient();
+
+  const handleSignOut = async() => {
+    await authStorage.removeAccessToken();
+    apolloClient.resetStore();
+    history.push('/');    
+  };
+  const authorizedUser = data ? data.authorizedUser : undefined;
+
   return (
     <>
     <View style={styles.container}>
     <ScrollView horizontal>
       <AppBarTab text='Repositories' link='/' />
-      <AppBarTab text='Sign in' link='/signin' />
+      {authorizedUser ? <AppBarTab text='Sign out' onPress={handleSignOut} /> : <AppBarTab text='Sign in' link='/signin' />}
     </ScrollView>
     </View>
     </>
